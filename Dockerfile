@@ -27,8 +27,7 @@ RUN mkdir /staging
 
 # Build the application, with optimizations, with static linking, and using jemalloc
 # N.B.: The static version of jemalloc is incompatible with the static Swift runtime.
-RUN --mount=type=cache,target=/build/.build \
-    swift build -c release \
+RUN swift build -c release \
         --product HelloVapor \
         --static-swift-stdlib \
         -Xlinker -ljemalloc && \
@@ -86,6 +85,5 @@ USER vapor:vapor
 # Let Docker bind to port 8080
 EXPOSE 8080
 
-# Start the Vapor service when the image is run, default to listening on 8080 in production environment
-ENTRYPOINT ["./HelloVapor"]
-CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+# Start the Vapor service when the image is run. Cloud Run injects PORT at runtime.
+CMD ["sh", "-c", "./HelloVapor serve --env production --hostname 0.0.0.0 --port ${PORT:-8080}"]

@@ -1,2 +1,5 @@
 .build/
 .swiftpm/
+.devtoolkit/
+.vscode/
+db.sqlite
