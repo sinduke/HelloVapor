@@ -7,7 +7,7 @@ struct SQLiteInspector {
 
     private var sqlDB: any SQLDatabase {
         guard let sqlDB = db as? any SQLDatabase else {
-            fatalError("Current database is not an SQLDatabase.")
+            preconditionFailure("SQLiteInspector.sqlDB accessed before SQL database validation.")
         }
         return sqlDB
     }
@@ -15,6 +15,8 @@ struct SQLiteInspector {
     // MARK: - Public
 
     func tables() async throws -> [String] {
+        try ensureSQLDatabase()
+
         let rows = try await sqlDB.raw("""
             SELECT name
             FROM sqlite_master
@@ -29,6 +31,7 @@ struct SQLiteInspector {
     }
 
     func schema(for table: String) async throws -> [TableSchemaItem] {
+        try ensureSQLDatabase()
         let table = try sanitizeIdentifier(table)
 
         let rows = try await sqlDB.raw("""
@@ -52,6 +55,7 @@ struct SQLiteInspector {
         page: Int,
         pageSize: Int
     ) async throws -> TableRowsResponse {
+        try ensureSQLDatabase()
         let table = try sanitizeIdentifier(table)
 
         let safePage = max(page, 1)
@@ -74,7 +78,7 @@ struct SQLiteInspector {
             OFFSET \(bind: offset)
             """).all()
 
-        let columns = dataRows.first?.allColumns ?? []
+        let columns = try await columns(in: table, fallbackRows: dataRows)
         let mappedRows = dataRows.map { decodeRow($0) }
 
         return TableRowsResponse(
@@ -88,6 +92,7 @@ struct SQLiteInspector {
     }
 
     func queryReadOnly(_ sql: String) async throws -> SQLQueryResponse {
+        try ensureSQLDatabase()
         let normalized = normalizeSQL(sql)
         try validateReadOnlySQL(normalized)
 
@@ -104,6 +109,12 @@ struct SQLiteInspector {
 
     // MARK: - Helpers
 
+    private func ensureSQLDatabase() throws {
+        guard db is any SQLDatabase else {
+            throw Abort(.internalServerError, reason: "DebugToolkit requires an SQL database connection.")
+        }
+    }
+
     private func sanitizeIdentifier(_ input: String) throws -> String {
         let pattern = #"^[A-Za-z_][A-Za-z0-9_]*$"#
         guard input.range(of: pattern, options: .regularExpression) != nil else {
@@ -119,6 +130,14 @@ struct SQLiteInspector {
     }
 
     private func validateReadOnlySQL(_ sql: String) throws {
+        guard !sql.isEmpty else {
+            throw Abort(.badRequest, reason: "SQL is empty.")
+        }
+
+        guard !containsStatementSeparator(sql) else {
+            throw Abort(.badRequest, reason: "Only one read-only SQL statement is allowed.")
+        }
+
         let upper = sql.uppercased()
 
         let allowedPrefixes = [
@@ -129,6 +148,10 @@ struct SQLiteInspector {
 
         guard allowedPrefixes.contains(where: { upper.hasPrefix($0) }) else {
             throw Abort(.badRequest, reason: "Only SELECT / PRAGMA / EXPLAIN queries are allowed.")
+        }
+
+        if upper.hasPrefix("PRAGMA") {
+            try validateReadOnlyPragma(upper)
         }
 
         let deniedKeywords = [
@@ -150,6 +173,87 @@ struct SQLiteInspector {
 
         guard !deniedKeywords.contains(where: { upper.contains($0) }) else {
             throw Abort(.badRequest, reason: "Dangerous SQL keyword detected.")
+        }
+    }
+
+    private func containsStatementSeparator(_ sql: String) -> Bool {
+        var isInSingleQuote = false
+        var isInDoubleQuote = false
+        var previous: Character?
+
+        for character in sql {
+            if character == "'" && !isInDoubleQuote && previous != "\\" {
+                isInSingleQuote.toggle()
+            } else if character == "\"" && !isInSingleQuote && previous != "\\" {
+                isInDoubleQuote.toggle()
+            } else if character == ";" && !isInSingleQuote && !isInDoubleQuote {
+                return true
+            }
+
+            previous = character
+        }
+
+        return false
+    }
+
+    private func validateReadOnlyPragma(_ upperSQL: String) throws {
+        guard !upperSQL.contains("=") else {
+            throw Abort(.badRequest, reason: "Writable PRAGMA statements are not allowed.")
+        }
+
+        let writablePragmas = Set([
+            "APPLICATION_ID",
+            "AUTO_VACUUM",
+            "BUSY_TIMEOUT",
+            "CACHE_SIZE",
+            "CASE_SENSITIVE_LIKE",
+            "CELL_SIZE_CHECK",
+            "CHECKPOINT_FULLFSYNC",
+            "DEFER_FOREIGN_KEYS",
+            "FOREIGN_KEYS",
+            "IGNORE_CHECK_CONSTRAINTS",
+            "JOURNAL_MODE",
+            "JOURNAL_SIZE_LIMIT",
+            "LOCKING_MODE",
+            "MAX_PAGE_COUNT",
+            "MMAP_SIZE",
+            "PAGE_SIZE",
+            "QUERY_ONLY",
+            "READ_UNCOMMITTED",
+            "RECURSIVE_TRIGGERS",
+            "REVERSE_UNORDERED_SELECTS",
+            "SECURE_DELETE",
+            "SYNCHRONOUS",
+            "TEMP_STORE",
+            "USER_VERSION",
+            "WAL_AUTOCHECKPOINT",
+            "WRITABLE_SCHEMA"
+        ])
+
+        let body = upperSQL
+            .dropFirst("PRAGMA".count)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let pragmaName = body
+            .prefix { character in
+                character.isLetter || character.isNumber || character == "_"
+            }
+
+        guard !writablePragmas.contains(String(pragmaName)) || !body.contains("(") else {
+            throw Abort(.badRequest, reason: "This PRAGMA can change database state and is not allowed.")
+        }
+    }
+
+    private func columns(in table: String, fallbackRows rows: [any SQLRow]) async throws -> [String] {
+        if let rowColumns = rows.first?.allColumns {
+            return rowColumns
+        }
+
+        let schemaRows = try await sqlDB.raw("""
+            PRAGMA table_info(\(ident: table))
+            """).all()
+
+        return schemaRows.compactMap { row in
+            try? row.decode(column: "name", as: String.self)
         }
     }
 

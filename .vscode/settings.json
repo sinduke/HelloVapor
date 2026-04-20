@@ -1,7 +1,163 @@
 {
-    "cSpell.words": [
-        "dflt",
-        "notnull",
-        "uppercased"
-    ]
+  // -------------------------------------
+  // Editor
+  // -------------------------------------
+  "editor.fontSize": 13,
+  "editor.lineHeight": 1.7,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.wordWrap": "on",
+  "editor.formatOnSave": true,
+  "editor.minimap.enabled": false,
+  "editor.stickyScroll.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.indentation": true,
+  "editor.guides.bracketPairs": true,
+  "editor.rulers": [100, 120],
+  "editor.inlineSuggest.enabled": true,
+
+  // -------------------------------------
+  // Files
+  // -------------------------------------
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 800,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.build": true,
+    "**/.swiftpm": true,
+    "**/.git": false
+  },
+  "search.exclude": {
+    "**/.build": true,
+    "**/.swiftpm": true,
+    "**/.git": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/.build/**": true,
+    "**/.swiftpm/**": true,
+    "**/node_modules/**": true
+  },
+
+  // -------------------------------------
+  // Swift
+  // -------------------------------------
+  "[swift]": {
+    "editor.defaultFormatter": "swiftlang.swift-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+
+  "swift.path": "/usr/bin/swift",
+  "swift.enableTerminalEnvironment": true,
+
+  // 新版扩展配置
+  "swift.sourcekit-lsp.backgroundIndexing": "auto",
+  "swift.sourcekit-lsp.trace.server": "off",
+
+  // 不要手动设置这个，避免和当前 toolchain 不匹配
+  // "swift.sourcekit-lsp.serverPath": "/usr/bin/sourcekit-lsp",
+
+  // Package / Plugin
+  "swift.packageArguments": [],
+  "swift.pluginArguments": [],
+  "swift.pluginPermissions": {},
+
+  // -------------------------------------
+  // File associations
+  // -------------------------------------
+  "files.associations": {
+    "Package.swift": "swift",
+    "*.leaf": "html",
+    ".env*": "dotenv"
+  },
+
+  // -------------------------------------
+  // Terminal
+  // -------------------------------------
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.lineHeight": 1.2,
+  "terminal.integrated.scrollback": 10000,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.tabs.enabled": true,
+  "terminal.integrated.tabs.location": "right",
+  "terminal.integrated.enableMultiLinePasteWarning": "auto",
+
+  // -------------------------------------
+  // Explorer / Workbench
+  // -------------------------------------
+  "explorer.compactFolders": false,
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "workbench.startupEditor": "none",
+  "workbench.editor.labelFormat": "medium",
+  "workbench.list.smoothScrolling": true,
+  "breadcrumbs.enabled": true,
+
+  // -------------------------------------
+  // Git
+  // -------------------------------------
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.openRepositoryInParentFolders": "always",
+
+  // -------------------------------------
+  // Spell
+  // -------------------------------------
+  "cSpell.enabled": true,
+  "cSpell.language": "en,zh-CN",
+  "cSpell.words": [
+    "acronym",
+    "asyncawait",
+    "authed",
+    "codable",
+    "crud",
+    "ctx",
+    "dflt",
+    "dto",
+    "firestore",
+    "fluent",
+    "middlewares",
+    "migrationable",
+    "MJSON",
+    "notnull",
+    "postgres",
+    "repo",
+    "req",
+    "res",
+    "sendable",
+    "sourcekit",
+    "sourcekitlsp",
+    "sqlite",
+    "uppercased",
+    "uuid",
+    "vapor",
+    "viewmodel"
+  ],
+
+  // -------------------------------------
+  // JSON / Markdown / YAML
+  // -------------------------------------
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    "editor.wordWrap": "on"
+  },
+  "[yaml]": {
+    "editor.formatOnSave": true
+  },
+
+  // -------------------------------------
+  // Misc
+  // -------------------------------------
+  "problems.showCurrentInStatus": true,
+  "security.workspace.trust.untrustedFiles": "open"
 }

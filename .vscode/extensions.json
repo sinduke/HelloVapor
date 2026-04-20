@@ -1,3 +1,13 @@
 {
-    "recommendations": ["swiftlang.swift-vscode", "Vapor.vapor-vscode"]
+  "recommendations": [
+    "swiftlang.swift-vscode",
+    "sswg.swift-lldb",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "aaron-bond.better-comments",
+    "redhat.vscode-yaml",
+    "mikestead.dotenv",
+    "yzhang.markdown-all-in-one"
+  ]
 }

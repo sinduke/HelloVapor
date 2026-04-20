@@ -1,0 +1,55 @@
+
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "swift: resolve",
+      "type": "shell",
+      "command": "swift package resolve",
+      "problemMatcher": []
+    },
+    {
+      "label": "swift: build",
+      "type": "shell",
+      "command": "swift build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "swift: test",
+      "type": "shell",
+      "command": "swift test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "vapor: serve",
+      "type": "shell",
+      "command": "swift run App serve --env development",
+      "group": "test",
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "swift: clean cache",
+      "type": "shell",
+      "command": "rm -rf .build .swiftpm",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: up",
+      "type": "shell",
+      "command": "docker compose up -d",
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: logs",
+      "type": "shell",
+      "command": "docker compose logs -f",
+      "problemMatcher": []
+    }
+  ]
+}
