@@ -37,6 +37,11 @@ COPY Sources ./Sources
 COPY Public ./Public
 COPY Resources ./Resources
 
+# Tests are intentionally excluded from the Docker build context, but SwiftPM
+# still validates the test target path when loading the package graph.
+RUN mkdir -p Tests/HelloVaporTests && \
+    printf '// Docker build placeholder for SwiftPM test target discovery.\n' > Tests/HelloVaporTests/DummyTests.swift
+
 RUN mkdir /staging
 
 # Build the application, with optimizations, with static linking, and using jemalloc
