@@ -26,9 +26,11 @@ RUN swift package resolve \
 # executable target name. This lets Docker reuse the expensive Vapor/Fluent/Leaf
 # compile layer when only application source files change.
 RUN mkdir -p Sources/HelloVapor && \
+    mkdir -p Tests/HelloVaporTests && \
     printf 'print("dependency cache warmup")\n' > Sources/HelloVapor/main.swift && \
+    printf '// Dependency cache warmup placeholder.\n' > Tests/HelloVaporTests/DummyTests.swift && \
     swift build -c release --product HelloVapor -j "${SWIFT_BUILD_JOBS}" && \
-    rm -rf Sources
+    rm -rf Sources Tests
 
 # Copy application source and runtime resources.
 COPY Sources ./Sources
