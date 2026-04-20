@@ -3,14 +3,16 @@
 # ================================
 FROM swift:6.1-noble AS build
 
-# Install OS updates
+# Keep the image setup small; full dist-upgrade makes Cloud Build slower and
+# less cacheable without helping the app build.
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && apt-get install -y libjemalloc-dev
+    && apt-get install -y --no-install-recommends libjemalloc-dev \
+    && rm -r /var/lib/apt/lists/*
 
 # Set up a build area
 WORKDIR /build
+ARG SWIFT_BUILD_JOBS=4
 
 # First just resolve dependencies.
 # This creates a cached layer that can be reused
@@ -20,8 +22,18 @@ COPY ./Package.* ./
 RUN swift package resolve \
         $([ -f ./Package.resolved ] && echo "--force-resolved-versions" || true)
 
-# Copy entire repo into container
-COPY . .
+# Warm up compiled package dependencies with a minimal target that has the same
+# executable target name. This lets Docker reuse the expensive Vapor/Fluent/Leaf
+# compile layer when only application source files change.
+RUN mkdir -p Sources/HelloVapor && \
+    printf 'print("dependency cache warmup")\n' > Sources/HelloVapor/main.swift && \
+    swift build -c release --product HelloVapor -j "${SWIFT_BUILD_JOBS}" && \
+    rm -rf Sources
+
+# Copy application source and runtime resources.
+COPY Sources ./Sources
+COPY Public ./Public
+COPY Resources ./Resources
 
 RUN mkdir /staging
 
@@ -29,12 +41,14 @@ RUN mkdir /staging
 # N.B.: The static version of jemalloc is incompatible with the static Swift runtime.
 RUN swift build -c release \
         --product HelloVapor \
+        -j "${SWIFT_BUILD_JOBS}" \
         --static-swift-stdlib \
         -Xlinker -ljemalloc && \
+    BIN_PATH="$(swift build -c release --show-bin-path)" && \
     # Copy main executable to staging area
-    cp "$(swift build -c release --show-bin-path)/HelloVapor" /staging && \
+    cp "${BIN_PATH}/HelloVapor" /staging && \
     # Copy resources bundled by SPM to staging area
-    find -L "$(swift build -c release --show-bin-path)" -regex '.*\.resources$' -exec cp -Ra {} /staging \;
+    find -L "${BIN_PATH}" -regex '.*\.resources$' -exec cp -Ra {} /staging \;
 
 
 # Switch to the staging area
@@ -56,15 +70,11 @@ FROM ubuntu:noble
 # Make sure all system packages are up to date, and install only essential packages.
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
     && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
     && apt-get -q install -y \
+      --no-install-recommends \
       libjemalloc2 \
       ca-certificates \
       tzdata \
-# If your app or its dependencies import FoundationNetworking, also install `libcurl4`.
-      # libcurl4 \
-# If your app or its dependencies import FoundationXML, also install `libxml2`.
-      # libxml2 \
     && rm -r /var/lib/apt/lists/*
 
 # Create a vapor user and group with /app as its home directory

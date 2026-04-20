@@ -1,5 +1,9 @@
 .build/
 .swiftpm/
+.git/
+.github/
 .devtoolkit/
 .vscode/
+.DS_Store
 db.sqlite
+Tests/
