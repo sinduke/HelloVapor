@@ -10,6 +10,7 @@ struct CreateAcronym: AsyncMigration {
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
             .field("deleted_at", .datetime)
+            .unique(on: "short")
             .create()
     }
 
